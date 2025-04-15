@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>小叶❤️小白</title>
     <script src="https://cdn.jsdelivr.net/gh/zyoushuo/Blog/hexo/js/mouse_slide.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/zyoushuo/Blog/hexo/js/clicklove.js"></script>
@@ -44,6 +44,7 @@
             object-fit: contain;
             opacity: 0.8;
             align-self: center;
+            transition: all 0.3s ease; /* 添加过渡效果 */
         }
         .info-section {
             position: absolute;
@@ -81,6 +82,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
         }
         .center-image {
             max-height: 100%;
@@ -99,6 +101,58 @@
             font-size: 2.5em;
             margin: 0;
             text-shadow: 0 0 15px #ff30c5;
+        }
+        
+        /* 媒体查询，适配移动设备 */
+        @media (max-width: 768px) {
+            .side-image {
+                max-width: 30%;
+                height: 65%;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .days-counter {
+                font-size: 18px;
+            }
+            
+            .namebox {
+                top: 35%;
+            }
+            
+            .days-counter {
+                top: 65%;
+            }
+            
+            .image-section {
+                height: 15vh;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .side-image {
+                max-width: 32%;
+                height: 60%;
+                opacity: 0.6; /* 降低透明度，减少对爱心动画的视觉干扰 */
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .days-counter {
+                font-size: 16px;
+            }
+            
+            .heart-section {
+                flex: 0.85;
+            }
+            
+            .image-section {
+                height: 15vh;
+            }
         }
     </style>
 </head>
@@ -144,8 +198,48 @@
             counter.innerHTML = `已相爱<span style="color: #ff30c5; margin:0 5px">${days}</span>天`;
         }
 
+        // 根据屏幕宽度动态调整侧边图片尺寸
+        function adjustSideImages() {
+            const screenWidth = window.innerWidth;
+            const sideImages = document.querySelectorAll('.side-image');
+            
+            // 计算动态尺寸比例，屏幕越小，图片相对越大
+            let widthPercentage, heightPercentage, opacity;
+            
+            if (screenWidth <= 480) { // 手机屏幕
+                // 小屏幕下图片相对更大，以保持可见性
+                widthPercentage = Math.min(35, 40 - (screenWidth / 480) * 10); // 30-35% 范围
+                heightPercentage = Math.min(65, 70 - (screenWidth / 480) * 10); // 60-65% 范围
+                opacity = 0.6;
+            } else if (screenWidth <= 768) { // 平板屏幕
+                // 中等屏幕使用插值计算
+                const ratio = (screenWidth - 480) / (768 - 480);
+                widthPercentage = 35 - (ratio * 10); // 从35%到25%
+                heightPercentage = 65 - (ratio * 0); // 保持在65%
+                opacity = 0.6 + (ratio * 0.2); // 从0.6到0.8
+            } else { // 桌面屏幕
+                // 大屏幕使用插值计算
+                const ratio = Math.min(1, (screenWidth - 768) / 1000);
+                widthPercentage = 25 + (ratio * 0); // 保持在25%
+                heightPercentage = 65 + (ratio * 15); // 从65%到80%
+                opacity = 0.8;
+            }
+            
+            // 应用计算后的样式
+            sideImages.forEach(img => {
+                img.style.maxWidth = `${widthPercentage}%`;
+                img.style.height = `${heightPercentage}%`;
+                img.style.opacity = opacity;
+            });
+        }
+
         // 初始化
         updateDays();
+        adjustSideImages(); // 初始调整图片尺寸
+        
+        // 窗口大小改变时重新调整
+        window.addEventListener('resize', adjustSideImages);
+        
         // 设置每日更新（北京时间每日0点更新）
         const now = new Date();
         const delay = 24*60*60*1000 - (now.getHours()*60*60*1000 + now.getMinutes()*60*1000 + now.getSeconds()*1000);
@@ -294,9 +388,23 @@
                 time;
 
         function pointOnHeart(t) {
+          // 基本爱心形状
+          let scaleX = 160;
+          let scaleY = 130;
+
+          // 响应式缩放爱心大小
+          const screenWidth = window.innerWidth;
+          if (screenWidth <= 480) {
+            scaleX = 100;
+            scaleY = 80;
+          } else if (screenWidth <= 768) {
+            scaleX = 130;
+            scaleY = 100;
+          }
+
           return new Point(
-                  160 * Math.pow(Math.sin(t), 3),
-                  130 * Math.cos(t) - 50 * Math.cos(2 * t) - 20 * Math.cos(3 * t) - 10 * Math.cos(4 * t) + 25
+                  scaleX * Math.pow(Math.sin(t), 3),
+                  scaleY * Math.cos(t) - 50 * Math.cos(2 * t) - 20 * Math.cos(3 * t) - 10 * Math.cos(4 * t) + 25
           );
         }
 
@@ -347,6 +455,10 @@
         function onResize() {
           canvas.width = canvas.clientWidth;
           canvas.height = canvas.clientHeight;
+          
+          // 重新渲染爱心以适应新的大小
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          particles = new ParticlePool(settings.particles.length);
         }
         window.onresize = onResize;
 
